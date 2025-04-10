@@ -2,9 +2,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
-import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 
 Future<void> _messageHandler(RemoteMessage message) async {
@@ -21,6 +21,8 @@ void main() async {
 }
 
 class MessagingTutorial extends StatelessWidget {
+  const MessagingTutorial({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -35,7 +37,7 @@ class MessagingTutorial extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, this.title}) : super(key: key);
+  const MyHomePage({super.key, this.title});
 
   final String? title;
 
@@ -58,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
     FirebaseMessaging.instance.getToken().then((value) {
       print('Device Token: $value');
     });
-    FirebaseMessaging.onMessage.listen((RemoteMessage event) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage event) async {
       print("message received");
       final notification = event.notification;
       final data = event.data;
@@ -67,6 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _storeNotification(messageType, messageBody);
       print("Type: $messageType");
       print("Body: $messageBody");
+      await showNotification();
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -111,6 +114,38 @@ class _MyHomePageState extends State<MyHomePage> {
       'timestamp': FieldValue.serverTimestamp(),
     });
   }
+
+  Future<void> showNotification() async {
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+  const AndroidNotificationDetails androidPlatformChannelSpecifics =
+      AndroidNotificationDetails(
+    'basic_channel',
+    'Basic Notifications',
+    channelDescription: 'For Everything',
+    importance: Importance.max,
+    priority: Priority.high,
+  );
+
+  const NotificationDetails platformChannelSpecifics =
+      NotificationDetails(android: androidPlatformChannelSpecifics);
+
+  await flutterLocalNotificationsPlugin.show(
+    0,
+    'Title',
+    'Body', 
+    platformChannelSpecifics,
+    payload: 'item x',
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
