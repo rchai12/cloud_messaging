@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
+import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 
 Future<void> _messageHandler(RemoteMessage message) async {
   print('background message ${message.notification!.body}');
@@ -50,26 +51,35 @@ class _MyHomePageState extends State<MyHomePage> {
     messaging.getToken().then((value) {
       print(value);
     });
+    FirebaseMessaging.instance.getToken().then((value) {
+      print('Device Token: $value');
+    });
     FirebaseMessaging.onMessage.listen((RemoteMessage event) {
-      print("message recieved");
-      print(event.notification!.body);
-      print(event.data.values);
+      print("message received");
+      final notification = event.notification;
+      final data = event.data;
+      String messageType = data['type'] ?? 'regular';
+      String messageBody = notification?.body ?? 'No body';
+      print("Type: $messageType");
+      print("Body: $messageBody");
       showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text("Notification"),
-              content: Text(event.notification!.body!),
-              actions: [
-                TextButton(
-                  child: Text("Ok"),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                )
-              ],
-            );
-          });
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(messageType == 'important' ? "Important Message" : "Notification"),
+            content: Text(messageBody),
+            backgroundColor: messageType == 'important' ? Colors.red[100] : null,
+            actions: [
+              TextButton(
+                child: Text("OK"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              )
+            ],
+          );
+        },
+      );
     });
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       print('Message clicked!');
