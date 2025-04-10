@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 Future<void> _messageHandler(RemoteMessage message) async {
   print('background message ${message.notification!.body}');
@@ -54,11 +55,9 @@ class _MyHomePageState extends State<MyHomePage> {
     _signInAnon();
     messaging = FirebaseMessaging.instance;
     messaging.subscribeToTopic("messaging");
+    _initializeNotifications();
     messaging.getToken().then((value) {
       print(value);
-    });
-    FirebaseMessaging.instance.getToken().then((value) {
-      print('Device Token: $value');
     });
     FirebaseMessaging.onMessage.listen((RemoteMessage event) async {
       print("message received");
@@ -115,37 +114,59 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    final InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'basic_channel',
+      'Basic Notifications',
+      description: 'For Everything',
+      importance: Importance.max,
+    );
+
+    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()!
+        .createNotificationChannel(channel);
+  }
+
+
   Future<void> showNotification() async {
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'basic_channel',
+      'Basic Notifications',
+      channelDescription: 'For Everything',
+      importance: Importance.max,
+      priority: Priority.high,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          'action_1',
+          'Reply', 
+        ),
+        AndroidNotificationAction(
+          'action_2',
+          'Dismiss',
+        ),
+      ],
+    );
 
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
 
-  final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
-
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
-  const AndroidNotificationDetails androidPlatformChannelSpecifics =
-      AndroidNotificationDetails(
-    'basic_channel',
-    'Basic Notifications',
-    channelDescription: 'For Everything',
-    importance: Importance.max,
-    priority: Priority.high,
-  );
-
-  const NotificationDetails platformChannelSpecifics =
-      NotificationDetails(android: androidPlatformChannelSpecifics);
-
-  await flutterLocalNotificationsPlugin.show(
-    0,
-    'Title',
-    'Body', 
-    platformChannelSpecifics,
-    payload: 'item x',
-  );
-}
-
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Title',
+      'Body', 
+      platformChannelSpecifics,
+      payload: 'item x',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
